@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -194,11 +195,13 @@ class BetrugsradarPage extends StatefulWidget {
 class _BetrugsradarPageState extends State<BetrugsradarPage> {
   final TextEditingController _controller = TextEditingController();
   final Random _random = Random();
+  static const Duration _popupDuration = Duration(seconds: 3);
 
   FraudDatabase? _database;
   String? _loadError;
   CallCheckResult? _result;
   bool _showPopup = false;
+  Timer? _popupHideTimer;
 
   bool _isIncomingCallVisible = false;
   String _simulatedNumber = '';
@@ -237,8 +240,36 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
 
   @override
   void dispose() {
+    _popupHideTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _dismissPopup() {
+    _popupHideTimer?.cancel();
+    _popupHideTimer = null;
+    if (!mounted || !_showPopup) {
+      return;
+    }
+    setState(() {
+      _showPopup = false;
+    });
+  }
+
+  void _showPopupWithAutoDismiss() {
+    _popupHideTimer?.cancel();
+    setState(() {
+      _showPopup = true;
+    });
+
+    _popupHideTimer = Timer(_popupDuration, () {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _showPopup = false;
+      });
+    });
   }
 
   Future<void> _loadDatabase() async {
@@ -266,9 +297,9 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
       return;
     }
     final checked = _database!.checkNumber(_controller.text);
+    _popupHideTimer?.cancel();
     setState(() {
       _result = checked;
-      _showPopup = true;
       _recentChecks = [
         RecentCheck(
           number: checked.number,
@@ -280,6 +311,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
         ..._recentChecks,
       ];
     });
+    _showPopupWithAutoDismiss();
   }
 
   Future<void> _startSimulation() async {
@@ -364,11 +396,28 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
                 ),
               ),
               if (_showPopup && _result != null)
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _dismissPopup,
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.08),
+                    ),
+                  ),
+                ),
+              if (_showPopup && _result != null)
                 Positioned(
                   top: 20,
                   left: 20,
                   right: 20,
-                  child: _analysisPopup(_result!),
+                  child: AnimatedOpacity(
+                    opacity: _showPopup ? 1 : 0,
+                    duration: const Duration(milliseconds: 220),
+                    child: _analysisPopup(
+                      _result!,
+                      onClose: _dismissPopup,
+                    ),
+                  ),
                 ),
               if (_isIncomingCallVisible) _incomingCallSimulationOverlay(),
             ],
@@ -557,7 +606,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
               Expanded(
                 child: _secondaryActionButton(
                   title: 'Popup schließen',
-                  onTap: () => setState(() => _showPopup = false),
+                  onTap: _dismissPopup,
                 ),
               ),
               const SizedBox(width: 10),
@@ -847,7 +896,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
     );
   }
 
-  Widget _analysisPopup(CallCheckResult result) {
+  Widget _analysisPopup(CallCheckResult result, {required VoidCallback onClose}) {
     return Material(
       elevation: 10,
       borderRadius: BorderRadius.circular(28),
@@ -860,9 +909,25 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Analyse abgeschlossen',
-              style: TextStyle(color: Colors.black54),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Analyse abgeschlossen',
+                    style: TextStyle(color: Colors.black54),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: onClose,
+                  borderRadius: BorderRadius.circular(999),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.close, color: Colors.black54, size: 20),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
