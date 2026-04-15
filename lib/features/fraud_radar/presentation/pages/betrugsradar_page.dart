@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:my_app/core/utils/validators.dart';
 import 'package:my_app/features/fraud_radar/data/fraud_database.dart';
 import 'package:my_app/features/fraud_radar/domain/models/call_check_result.dart';
 import 'package:my_app/features/fraud_radar/domain/models/recent_check.dart';
@@ -20,6 +22,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
 
   FraudDatabase? _database;
   String? _loadError;
+  String? _phoneValidationError;
   CallCheckResult? _result;
   bool _showPopup = false;
   Timer? _popupHideTimer;
@@ -93,6 +96,15 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
     });
   }
 
+  void _validatePhoneInput([String? rawInput]) {
+    final value = rawInput ?? _controller.text;
+    setState(() {
+      _phoneValidationError = GermanPhoneValidator.validateGermanPhoneNumber(
+        value,
+      );
+    });
+  }
+
   Future<void> _loadDatabase() async {
     try {
       final database = await FraudDatabase.load();
@@ -114,12 +126,26 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
   }
 
   void _analyzeNumber() {
+    final validationError = GermanPhoneValidator.validateGermanPhoneNumber(
+      _controller.text,
+      allowEmpty: false,
+    );
+
+    if (validationError != null) {
+      setState(() {
+        _phoneValidationError = validationError;
+      });
+      return;
+    }
+
     if (_database == null || _controller.text.trim().isEmpty) {
       return;
     }
-    final checked = _database!.checkNumber(_controller.text);
+    final sanitizedInput = GermanPhoneValidator.sanitize(_controller.text);
+    final checked = _database!.checkNumber(sanitizedInput);
     _popupHideTimer?.cancel();
     setState(() {
+      _phoneValidationError = null;
       _result = checked;
       _recentChecks = [
         RecentCheck(
@@ -356,7 +382,9 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
   }
 
   Widget _analyzerCard() {
-    final isDisabled = _database == null || _controller.text.trim().isEmpty;
+    final hasInput = _controller.text.trim().isNotEmpty;
+    final isInvalidInput = hasInput && _phoneValidationError != null;
+    final isDisabled = _database == null || !hasInput || isInvalidInput;
 
     return _card(
       child: Column(
@@ -375,16 +403,44 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
           TextField(
             controller: _controller,
             keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s]')),
+            ],
             decoration: InputDecoration(
               hintText: 'Beispiel: 017625443992',
+              helperText: 'Example: +4915123456789 or 015123456789',
+              errorText: _phoneValidationError,
               filled: true,
               fillColor: Colors.white,
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isInvalidInput
+                      ? Colors.red
+                      : Colors.transparent,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: isInvalidInput ? Colors.red : Colors.indigo,
+                  width: 1.4,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 1.6),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
             ),
-            onChanged: (_) => setState(() {}),
+            onChanged: _validatePhoneInput,
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(
@@ -393,17 +449,26 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
               children: [
                 _quickChip(
                   'Spam-Messenger',
-                  onTap: () => _controller.text = '017625443992',
+                  onTap: () {
+                    _controller.text = '017625443992';
+                    _validatePhoneInput(_controller.text);
+                  },
                 ),
                 const SizedBox(width: 8),
                 _quickChip(
                   'Internet PopUp',
-                  onTap: () => _controller.text = '08001824834',
+                  onTap: () {
+                    _controller.text = '08001824834';
+                    _validatePhoneInput(_controller.text);
+                  },
                 ),
                 const SizedBox(width: 8),
                 _quickChip(
                   'Sichere Nummer',
-                  onTap: () => _controller.text = '015999999999',
+                  onTap: () {
+                    _controller.text = '015999999999';
+                    _validatePhoneInput(_controller.text);
+                  },
                 ),
               ],
             ),
@@ -434,7 +499,12 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
               Expanded(
                 child: _secondaryActionButton(
                   title: 'Feld leeren',
-                  onTap: () => setState(() => _controller.clear()),
+                  onTap: () {
+                    setState(() {
+                      _controller.clear();
+                      _phoneValidationError = null;
+                    });
+                  },
                 ),
               ),
             ],
@@ -964,10 +1034,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () {
-        setState(() {
-          _controller.text = _controller.text;
-          onTap();
-        });
+        onTap();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
