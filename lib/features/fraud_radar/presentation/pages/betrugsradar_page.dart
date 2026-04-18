@@ -260,10 +260,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
                   child: AnimatedOpacity(
                     opacity: _showPopup ? 1 : 0,
                     duration: const Duration(milliseconds: 220),
-                    child: _analysisPopup(
-                      _result!,
-                      onClose: _dismissPopup,
-                    ),
+                    child: _analysisPopup(_result!, onClose: _dismissPopup),
                   ),
                 ),
               if (_isIncomingCallVisible) _incomingCallSimulationOverlay(),
@@ -362,7 +359,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
 
     return GridView.count(
       crossAxisCount: 2,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.42,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       shrinkWrap: true,
@@ -415,9 +412,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: isInvalidInput
-                      ? Colors.red
-                      : Colors.transparent,
+                  color: isInvalidInput ? Colors.red : Colors.transparent,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -677,66 +672,72 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 21),
           ),
           const SizedBox(height: 10),
-          ..._recentChecks.take(5).map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      item.status == 'Betrug'
-                          ? Icons.dangerous
-                          : Icons.check_circle,
-                      color: item.status == 'Betrug' ? Colors.red : Colors.green,
-                      size: 26,
+          ..._recentChecks
+              .take(5)
+              .map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.number,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          item.status == 'Betrug'
+                              ? Icons.dangerous
+                              : Icons.check_circle,
+                          color: item.status == 'Betrug'
+                              ? Colors.red
+                              : Colors.green,
+                          size: 26,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.number,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                item.category,
+                                style: const TextStyle(color: Colors.black54),
+                              ),
+                              Text(
+                                item.subtitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            item.category,
-                            style: const TextStyle(color: Colors.black54),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${item.risk}%',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: item.status == 'Betrug'
+                                ? Colors.red
+                                : Colors.green,
                           ),
-                          Text(
-                            item.subtitle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.black54,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${item.risk}%',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: item.status == 'Betrug' ? Colors.red : Colors.green,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
         ],
       ),
     );
@@ -781,7 +782,10 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
     );
   }
 
-  Widget _analysisPopup(CallCheckResult result, {required VoidCallback onClose}) {
+  Widget _analysisPopup(
+    CallCheckResult result, {
+    required VoidCallback onClose,
+  }) {
     return Material(
       elevation: 10,
       borderRadius: BorderRadius.circular(28),
@@ -1010,21 +1014,32 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Container(
-            padding: const EdgeInsets.all(9),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: Colors.white, size: 18),
           ),
+          const SizedBox(height: 10),
           Text(
             value,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
           ),
-          Text(title, style: const TextStyle(color: Colors.black54)),
+          const SizedBox(height: 4),
+          Expanded(
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.black54),
+              ),
+            ),
+          ),
         ],
       ),
     );
