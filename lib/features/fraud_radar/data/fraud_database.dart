@@ -11,8 +11,7 @@ class FraudDatabase {
   final List<FraudEntry> entries;
   final Map<String, FraudEntry> lookup;
   static const String _remoteDataUrl =
-      'https://dufgldnpzvzrmpwmskli.supabase.co/storage/v1/object/public/phone_spam/betrugsnummern_2016_2026.json';
-
+      'https://vehpmilchkfhfyaogvog.supabase.co/storage/v1/object/sign/data_numbers/betrugsnummern_2016_2026.json?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9jNTI4ODA5Mi02ODlhLTQ5NjUtOTY5Zi0wNGVmYzA3M2FlZTMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJkYXRhX251bWJlcnMvYmV0cnVnc251bW1lcm5fMjAxNl8yMDI2Lmpzb24iLCJpYXQiOjE3Nzc0OTYwOTQsImV4cCI6MTgwOTAzMjA5NH0.Lwhic0m1O-MG6gnUCKRsS1CdcNv5r5kbtvliE2w0PLI';
   static Future<FraudDatabase> load() async {
     final uri = Uri.parse(_remoteDataUrl);
     final response = await http.get(uri).timeout(const Duration(seconds: 15));

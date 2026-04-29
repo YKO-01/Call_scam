@@ -23,9 +23,9 @@ class GermanPhoneValidator {
     }
 
     // Must start with +49 (international) or 0 (local).
-    if (!(sanitized.startsWith('+49') || sanitized.startsWith('0'))) {
-      return invalidPhoneMessage;
-    }
+    // if (!(sanitized.startsWith('+49') || sanitized.startsWith('0'))) {
+    //   return invalidPhoneMessage;
+    // }
 
     final digitsOnly = sanitized.startsWith('+')
         ? sanitized.substring(1)
