@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
@@ -110,18 +111,24 @@ class FraudDatabase {
       'https://rtepuhnpfktqgddguapf.supabase.co/storage/v1/object/public/bur_data/betrugsnummern_2016_2026%20(3).json';
 
   static Future<FraudDatabase> load() async {
-    final uri = Uri.parse(_remoteDataUrl);
-    final response = await http
-        .get(uri)
-        .timeout(const Duration(seconds: 15));
+    String rawJson;
+    try {
+      final uri = Uri.parse(_remoteDataUrl);
+      final response = await http
+          .get(uri)
+          .timeout(const Duration(seconds: 15));
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Remote data could not be loaded (HTTP ${response.statusCode}).',
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+
+      rawJson = utf8.decode(response.bodyBytes);
+    } catch (_) {
+      rawJson = await rootBundle.loadString(
+        'assets/betrugsnummern_2016_2026.json',
       );
     }
 
-    final rawJson = utf8.decode(response.bodyBytes);
     final decoded = await compute(_decodeFraudEntries, rawJson);
     final lookup = <String, FraudEntry>{
       for (final entry in decoded) normalize(entry.number): entry,
