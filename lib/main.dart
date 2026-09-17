@@ -107,7 +107,7 @@ class FraudDatabase {
   final List<FraudEntry> entries;
   final Map<String, FraudEntry> lookup;
   static const String _remoteDataUrl =
-      'https://dufgldnpzvzrmpwmskli.supabase.co/storage/v1/object/public/phone_spam/betrugsnummern_2016_2026.json';
+      'https://rtepuhnpfktqgddguapf.supabase.co/storage/v1/object/public/bur_data/betrugsnummern_2016_2026%20(3).json';
 
   static Future<FraudDatabase> load() async {
     final uri = Uri.parse(_remoteDataUrl);
@@ -466,7 +466,7 @@ class _BetrugsradarPageState extends State<BetrugsradarPage> {
 
     return GridView.count(
       crossAxisCount: 2,
-      childAspectRatio: 1.5,
+      mainAxisExtent: 142,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       shrinkWrap: true,
